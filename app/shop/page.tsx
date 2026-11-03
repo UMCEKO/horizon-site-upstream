@@ -122,8 +122,8 @@ export default async function ShopPage() {
               Sign in with the Microsoft account that owns Minecraft: Java Edition. Microsoft&apos;s own sign-in opens; Horizon never sees your password.
             </Step>
             <Step n={3} title="Claim the set">
-              Open <span className="text-white">Wardrobe</span> in the launcher&apos;s top bar and press <span className="text-white">Claim the founder set</span>. Then put
-              on what you like.
+              Open <span className="text-white">Wardrobe</span> in the launcher&apos;s top bar, then its <span className="text-white">Shop</span> tab, and press{" "}
+              <span className="text-white">Claim the founder set</span>. Wear what you like from the Wardrobe tab.
             </Step>
           </ol>
           <p className="mt-6 max-w-3xl rounded-2xl bg-white/[0.03] p-5 text-[15px] leading-relaxed text-white/70 ring-1 ring-white/[0.08]">
