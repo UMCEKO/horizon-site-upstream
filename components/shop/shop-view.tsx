@@ -2,21 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { ItemArt, ShopItem, ShopSlot } from "@/components/shop-data";
-import { animate, bounds, Cube, ItemModel, MANNEQUIN_HEAD, Player, playerSkin, pngUrl, PX, Stage, useTextures, type PartRefs, type Texture } from "@/components/shop/voxel";
+import { animate, bounds, ItemAlone, Player, playerSkin, pngUrl, PX, Stage, useTextures, type PartRefs, type Texture } from "@/components/shop/voxel";
 
-export const SLOT_LABEL: Record<ShopSlot, string> = { head: "Head", back: "Back", shoulder: "Shoulder pet", name_tag: "Name tag", theme: "Launcher theme" };
-
-// One line per founder item, from the design. Items the site doesn't know yet show without one.
-const LINES: Record<string, string> = {
-  founder_visor: "A short visor with Horizon's mark on the band, for the players who were here first.",
-  sunlet: "A tiny stepped sun that rides your shoulder and bobs as you go.",
-  founder_tag: "Horizon's mark before your name, and a violet line under it.",
-  first_light: "The launcher's sky just before sunrise, with a harbour skyline.",
-};
+export const SLOT_LABEL: Record<ShopSlot, string> = { head: "Head", torso: "Shirt", back: "Back", shoulder: "Shoulder pet", name_tag: "Name tag" };
 
 const TAG_NAME = "Your name";
 
-// ── when the window closes: a plain date, and the time left in days, hours and minutes ──
+// ── when the window closes: a plain date, and the time left in whole days (hours, then minutes, on the last day) ──
 
 const never = () => () => {};
 const subscribeHalfMinute = (onChange: () => void) => {
@@ -44,11 +36,9 @@ export function Countdown({ endsAt }: { endsAt: number }) {
   if (bucket === null) return <span className="invisible">0 days left</span>;
   const left = Math.max(0, endsAt - (bucket * 30_000) / 1000);
   if (left <= 0) return <span>The founder set isn&apos;t offered any more.</span>;
-  const days = Math.floor(left / 86_400);
-  const hours = Math.floor((left % 86_400) / 3600);
-  const minutes = Math.max(1, Math.floor((left % 3600) / 60));
-  const text = days >= 1 ? `${plural(days, "day")} and ${plural(hours, "hour")} left` : hours >= 1 ? `${plural(hours, "hour")} and ${plural(minutes, "minute")} left` : `${plural(minutes, "minute")} left`;
-  return <span className="tabular-nums">{text}</span>;
+  const text =
+    left >= 86_400 ? plural(Math.ceil(left / 86_400), "day") : left >= 3600 ? plural(Math.ceil(left / 3600), "hour") : plural(Math.max(1, Math.ceil(left / 60)), "minute");
+  return <span className="tabular-nums">{text} left</span>;
 }
 
 // ── the name tag, as other Horizon players see it ──
@@ -68,67 +58,13 @@ function NameTag({ art, big = false }: { art?: ItemArt; big?: boolean }) {
   );
 }
 
-// ── a launcher theme's sky ──
-
-function rng(seed: number) {
-  let a = seed;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function Skyline({ fill }: { fill: string }) {
-  const { blocks, hills } = useMemo(() => {
-    const r = rng(3);
-    const blocks: { x: number; w: number; h: number }[] = [];
-    for (let x = 0; x < 320; ) {
-      const w = 4 + Math.floor(r() * 10);
-      blocks.push({ x, w, h: 6 + Math.floor(r() * 18) });
-      x += w;
-    }
-    const hills = Array.from({ length: 80 }, (_, i) => ({ x: i * 4, y: 70 + Math.round(Math.sin((i * 4) / 23) * 4 + Math.sin((i * 4) / 9) * 2) }));
-    return { blocks, hills };
-  }, []);
-  return (
-    <svg viewBox="0 0 320 90" preserveAspectRatio="xMidYMax slice" className="absolute inset-x-0 bottom-0 h-[32%] w-full [shape-rendering:crispEdges]" aria-hidden>
-      <g fill={fill} opacity=".55">
-        {blocks.map((b) => (
-          <rect key={b.x} x={b.x} y={80 - b.h} width={b.w} height={b.h} />
-        ))}
-      </g>
-      <g fill={fill}>
-        {hills.map((h) => (
-          <rect key={h.x} x={h.x} y={h.y} width="4" height="20" />
-        ))}
-      </g>
-    </svg>
-  );
-}
-
-const skyBands = (sky: string[]) => `linear-gradient(${sky.map((c, i) => `${c} ${((i * 100) / sky.length).toFixed(2)}% ${(((i + 1) * 100) / sky.length).toFixed(2)}%`).join(", ")})`;
-
-function ThemeSky({ sky }: { sky: string[] }) {
-  return (
-    <div className="absolute inset-0" style={{ background: skyBands(sky) }}>
-      <svg viewBox="0 0 320 90" preserveAspectRatio="xMidYMax slice" className="absolute inset-0 h-full w-full [shape-rendering:crispEdges]" aria-hidden>
-        {[12, 18, 22, 24].map((w, i) => (
-          <rect key={w} x={230 - w} y={50 + i * 5} width={w * 2} height="4" fill="#ffd9a0" opacity={0.95 - i * 0.12} />
-        ))}
-      </svg>
-      <Skyline fill="#07061a" />
-    </div>
-  );
-}
-
 // ── an item alone, for its card ──
 
-const THUMB_TURN: Partial<Record<ShopSlot, number>> = { head: -32, shoulder: -32, back: 148 };
+const THUMB_TURN: Partial<Record<ShopSlot, number>> = { head: -32, torso: -32, shoulder: -32, back: 148 };
+// Items that read better on a faint mannequin of the bones they ride, so their size and fit show.
+const ON_MANNEQUIN = new Set<ShopSlot>(["head", "torso"]);
 
 function ItemThumb({ item, art, textures }: { item: ShopItem; art?: ItemArt; textures: Map<string, Texture> | null }) {
-  if (item.slot === "theme" && item.sky) return <ThemeSky sky={item.sky} />;
   if (item.slot === "name_tag") {
     return (
       <div className="flex h-full items-center justify-center">
@@ -138,22 +74,14 @@ function ItemThumb({ item, art, textures }: { item: ShopItem; art?: ItemArt; tex
   }
   const tex = art && textures?.get(pngUrl(art.texture));
   if (!art || !tex) return null;
-  const b = bounds(art);
-  let { centre, size } = b;
-  if (item.slot === "head") {
-    // Head items sit on a faint mannequin head, so their size reads.
-    const lo = centre.map((c, k) => Math.min(c - size / 2, MANNEQUIN_HEAD.origin[k]));
-    const hi = centre.map((c, k) => Math.max(c + size / 2, MANNEQUIN_HEAD.origin[k] + MANNEQUIN_HEAD.size[k]));
-    centre = [0, 1, 2].map((k) => (lo[k] + hi[k]) / 2) as typeof centre;
-    size = Math.max(...[0, 1, 2].map((k) => hi[k] - lo[k]));
-  }
+  const mannequin = ON_MANNEQUIN.has(item.slot);
+  const { centre, size } = bounds(art, mannequin);
   const scale = 88 / (size * PX);
   const ry = THUMB_TURN[item.slot] ?? -32;
   return (
     <Stage className="h-full w-full">
       <div className="vx-rig" style={{ transform: `scale(${scale}) rotateX(-20deg) rotateY(${ry}deg) translate3d(${-centre[0] * PX}px, ${-centre[1] * PX}px, ${centre[2] * PX}px)` }}>
-        {item.slot === "head" && <Cube cube={MANNEQUIN_HEAD} tint="rgb(42 36 72 / 0.6)" />}
-        <ItemModel art={art} tex={tex} />
+        <ItemAlone art={art} tex={tex} tint={mannequin ? "rgb(42 36 72 / 0.6)" : undefined} />
       </div>
     </Stage>
   );
@@ -161,7 +89,7 @@ function ItemThumb({ item, art, textures }: { item: ShopItem; art?: ItemArt; tex
 
 // ── the player wearing the set, on a turntable ──
 
-const FACING: Partial<Record<ShopSlot, number>> = { head: -28, shoulder: -62, name_tag: -18, back: 160 };
+const FACING: Partial<Record<ShopSlot, number>> = { head: -28, torso: -24, shoulder: -62, name_tag: -18, back: 160 };
 const DEFAULT_SKY = "radial-gradient(120% 90% at 50% 100%, rgb(107 75 255 / 0.22), transparent 60%), linear-gradient(rgb(255 255 255 / 0.02), rgb(255 255 255 / 0.05))";
 
 function usePrefersStill() {
@@ -176,7 +104,7 @@ function usePrefersStill() {
   );
 }
 
-function Turntable({ art, textures, skin, angleRef, turning, sky }: { art: ItemArt[]; textures: Map<string, Texture>; skin: Texture; angleRef: { current: number }; turning: boolean; sky?: string[] }) {
+function Turntable({ art, textures, skin, angleRef, turning }: { art: ItemArt[]; textures: Map<string, Texture>; skin: Texture; angleRef: { current: number }; turning: boolean }) {
   const stage = useRef<HTMLDivElement>(null);
   const rig = useRef<HTMLDivElement>(null);
   const tag = useRef<HTMLDivElement>(null);
@@ -293,12 +221,7 @@ function Turntable({ art, textures, skin, angleRef, turning, sky }: { art: ItemA
       aria-label="A player wearing the founder set. Drag, or use the left and right arrow keys, to turn it."
       className="vx-stage vx-turntable relative h-full w-full cursor-grab touch-pan-y overflow-hidden rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-[#a98fff] data-[drag]:cursor-grabbing"
     >
-      <div aria-hidden className="absolute inset-0 transition-opacity duration-500" style={{ background: DEFAULT_SKY, opacity: sky ? 0 : 1 }} />
-      {sky && (
-        <div aria-hidden className="absolute inset-0">
-          <ThemeSky sky={sky} />
-        </div>
-      )}
+      <div aria-hidden className="absolute inset-0" style={{ background: DEFAULT_SKY }} />
       <div className="vx-rig" ref={rig}>
         <Player skin={skin} items={worn} textures={textures} refs={refs} />
         {tagArt && (
@@ -329,7 +252,6 @@ export function FounderSet({ items, art }: { items: ShopItem[]; art: ItemArt[] }
   const [selected, setSelected] = useState<string | null>(null);
   const still = usePrefersStill();
   const artById = new Map(art.map((a) => [a.id, a]));
-  const chosen = items.find((i) => i.id === selected);
 
   const face = (deg: number) => {
     angle.current = deg;
@@ -342,7 +264,7 @@ export function FounderSet({ items, art }: { items: ShopItem[]; art: ItemArt[] }
       <div>
         <div className="relative aspect-[4/5] max-h-[560px] w-full rounded-2xl bg-white/[0.04] ring-1 ring-white/[0.08] sm:aspect-[5/5]">
           {textures && skin ? (
-            <Turntable art={art} textures={textures} skin={skin} angleRef={angle} turning={turning && !still} sky={chosen?.slot === "theme" ? chosen.sky : undefined} />
+            <Turntable art={art} textures={textures} skin={skin} angleRef={angle} turning={turning && !still} />
           ) : (
             <div className="absolute inset-0 animate-pulse rounded-2xl bg-white/[0.03] motion-reduce:animate-none" />
           )}
@@ -388,14 +310,11 @@ export function FounderSet({ items, art }: { items: ShopItem[]; art: ItemArt[] }
                 <span className="relative block h-36 overflow-hidden rounded-xl bg-[#0b0718]/70">
                   <ItemThumb item={item} art={artById.get(item.id)} textures={textures} />
                 </span>
-                <span className="flex items-start justify-between gap-3 px-2 pt-3">
-                  <span>
-                    <span className="block font-display text-[17px] leading-tight font-semibold tracking-[-0.01em] text-white">{item.name}</span>
-                    <span className="mt-0.5 block text-sm text-white/55">{SLOT_LABEL[item.slot]}</span>
-                  </span>
-                  <span className="mt-0.5 shrink-0 rounded-md bg-[#6b4bff]/25 px-2 py-0.5 text-xs font-semibold text-[#d9ceff]">Free</span>
+                <span className="block px-2 pt-3">
+                  <span className="block font-display text-[17px] leading-tight font-semibold tracking-[-0.01em] text-white">{item.name}</span>
+                  <span className="mt-0.5 block text-sm text-white/55">{SLOT_LABEL[item.slot]}</span>
                 </span>
-                {LINES[item.id] && <span className="block px-2 pt-2 pb-2 text-sm leading-relaxed text-white/65">{LINES[item.id]}</span>}
+                {item.line && <span className="block px-2 pt-2 pb-2 text-sm leading-relaxed text-white/65">{item.line}</span>}
               </button>
             </li>
           );

@@ -7,18 +7,22 @@ import { cacheLife } from "next/cache";
 const UPSTREAM = (process.env.COSMETICS_UPSTREAM || "https://cosmetics.playhorizon.dev").replace(/\/+$/, "");
 
 // For previews only: shows the page with a sample window while the service's window isn't open. Ignored on Railway's
-// production environment, so a stray variable there can't open the shop early.
+// production environment, so a stray variable there can't open the shop early. The sample window is as long as the
+// real one: seven days from the start of the current hour. Production reads the service's own dates only.
 const PREVIEW = process.env.SHOP_PREVIEW === "1" && process.env.RAILWAY_ENVIRONMENT_NAME !== "production";
-const PREVIEW_ENDS_AT = Date.UTC(2027, 3, 1) / 1000; // the end of 31 March 2027 (UTC), the date the design names
+const PREVIEW_DAYS = 7;
 
-export type ShopSlot = "head" | "back" | "shoulder" | "name_tag" | "theme";
-export type ShopItem = { id: string; hash: string; slot: ShopSlot; name: string; sky?: string[] };
+// What the founder set holds, as the launcher's Wardrobe sorts it. Launcher themes are free in the launcher's Settings
+// and never part of the shop, so an item of any other slot is left out.
+export type ShopSlot = "head" | "torso" | "back" | "shoulder" | "name_tag";
+export type ShopItem = { id: string; hash: string; slot: ShopSlot; name: string; line?: string };
 export type ShopStatus = { open: boolean; endsAt: number | null; items: ShopItem[]; preview: boolean };
 
 // The item file, as horizon's `crates/horizon-cosmetics` reads it (docs/cosmetics.md in the game's repository).
 export type Vec3 = [number, number, number];
 export type ArtCube = { origin: Vec3; size: Vec3; uv: [number, number]; inflate: number; mirror: boolean };
-export type ArtPart = { name: string; pivot: Vec3; rotation: Vec3; cubes: ArtCube[]; children: ArtPart[] };
+// `bone`: a top-level part may ride another bone than the item's (a shirt's sleeves on the arms), under the same attachment.
+export type ArtPart = { name: string; pivot: Vec3; rotation: Vec3; cubes: ArtCube[]; children: ArtPart[]; bone?: string };
 export type ArtAnimation = { part: string; motion: "swing" | "bob" | "spin"; axis: 0 | 1 | 2; amplitude: number; period: number; phase: number };
 export type ItemArt = {
   id: string;
@@ -30,7 +34,7 @@ export type ItemArt = {
   tagLine?: string;
 };
 
-const SLOTS = new Set<ShopSlot>(["head", "back", "shoulder", "name_tag", "theme"]);
+const SLOTS = new Set<ShopSlot>(["head", "torso", "back", "shoulder", "name_tag"]);
 const ID = /^[a-z0-9_]{1,48}$/;
 const HASH = /^[0-9a-f]{1,64}$/;
 const COLOUR = /^#[0-9a-f]{6}$/i;
@@ -53,19 +57,19 @@ async function upstream(path: string) {
 function readCatalogue(json: unknown): Omit<ShopStatus, "preview"> | null {
   if (!obj(json) || !obj(json.claim) || !Array.isArray(json.items)) return null;
   const claim = json.claim;
-  const founder = new Set(Array.isArray(claim.items) ? claim.items.filter((i): i is string => typeof i === "string") : []);
+  const founder = Array.isArray(claim.items) ? claim.items.filter((i): i is string => typeof i === "string") : [];
   const items: ShopItem[] = [];
   for (const raw of json.items) {
-    if (!obj(raw) || typeof raw.id !== "string" || !ID.test(raw.id) || !founder.has(raw.id)) continue;
+    if (!obj(raw) || typeof raw.id !== "string" || !ID.test(raw.id) || !founder.includes(raw.id)) continue;
     if (typeof raw.hash !== "string" || !HASH.test(raw.hash) || !SLOTS.has(raw.slot as ShopSlot)) continue;
     const names = obj(raw.names) ? raw.names : {};
     const name = typeof names.en_us === "string" ? names.en_us.slice(0, 48) : raw.id;
-    const sky = obj(raw.theme) && Array.isArray(raw.theme.sky) ? raw.theme.sky.filter((c): c is string => typeof c === "string" && COLOUR.test(c)) : [];
-    items.push({ id: raw.id, hash: raw.hash, slot: raw.slot as ShopSlot, name, ...(sky.length === 6 ? { sky } : {}) });
+    const lines = obj(raw.lines) ? raw.lines : {};
+    const line = typeof lines.en_us === "string" && lines.en_us.trim() ? lines.en_us.trim().slice(0, 160) : undefined;
+    items.push({ id: raw.id, hash: raw.hash, slot: raw.slot as ShopSlot, name, ...(line ? { line } : {}) });
   }
-  // The launcher's order: what you wear on the body first, then the name tag, then the theme.
-  const order: ShopSlot[] = ["head", "back", "shoulder", "name_tag", "theme"];
-  items.sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot));
+  // The order the service gives the set in.
+  items.sort((a, b) => founder.indexOf(a.id) - founder.indexOf(b.id));
   const endsAt = typeof claim.ends_at === "number" && Number.isFinite(claim.ends_at) ? claim.ends_at : null;
   return { open: claim.state === "open" && endsAt !== null, endsAt, items };
 }
@@ -83,7 +87,10 @@ export async function getShopStatus(): Promise<ShopStatus> {
     cacheLife({ stale: 60, revalidate: 60, expire: 300 });
   }
   if (live?.open) return { ...live, preview: false };
-  if (PREVIEW && live?.items.length) return { open: true, endsAt: PREVIEW_ENDS_AT, items: live.items, preview: true };
+  if (PREVIEW && live?.items.length) {
+    const start = Math.floor(Date.now() / 3_600_000) * 3600;
+    return { open: true, endsAt: start + PREVIEW_DAYS * 86_400, items: live.items, preview: true };
+  }
   return { open: false, endsAt: null, items: live?.items ?? [], preview: false };
 }
 
@@ -96,7 +103,8 @@ function readPart(raw: unknown, depth: number, count: { parts: number; cubes: nu
     cubes.push({ origin: vec3(c.origin), size: vec3(c.size).map((s) => Math.abs(s)) as Vec3, uv, inflate: clamp(num(c.inflate), -4, 4), mirror: c.mirror === true });
   }
   const children = (Array.isArray(raw.children) ? raw.children : []).map((p) => readPart(p, depth + 1, count)).filter((p): p is ArtPart => p !== null);
-  return { name: typeof raw.name === "string" ? raw.name.slice(0, 48) : "", pivot: vec3(raw.pivot), rotation: vec3(raw.rotation, 360), cubes, children };
+  const bone = depth === 0 && typeof raw.bone === "string" && BONES.has(raw.bone) ? { bone: raw.bone } : {};
+  return { name: typeof raw.name === "string" ? raw.name.slice(0, 48) : "", pivot: vec3(raw.pivot), rotation: vec3(raw.rotation, 360), cubes, children, ...bone };
 }
 
 function readArt(json: unknown, id: string): ItemArt | null {
@@ -132,12 +140,11 @@ function readArt(json: unknown, id: string): ItemArt | null {
   };
 }
 
-/** The item files of the founder set's worn items, for the page's 3D preview. Items that fail to load are left out. */
+/** The founder set's item files, for the page's 3D preview. Items that fail to load are left out. */
 export async function getShopArt(items: ShopItem[]): Promise<ItemArt[]> {
   "use cache";
-  const worn = items.filter((i) => i.slot !== "theme");
   const art = await Promise.all(
-    worn.map(async (item) => {
+    items.map(async (item) => {
       try {
         return readArt(await upstream(`/v1/items/${item.id}?hash=${item.hash}`), item.id);
       } catch (error) {
@@ -148,6 +155,6 @@ export async function getShopArt(items: ShopItem[]): Promise<ItemArt[]> {
   );
   const loaded = art.filter((a): a is ItemArt => a !== null);
   // An item file never changes for one hash; ask again soon only when one didn't arrive.
-  cacheLife(loaded.length === worn.length ? { stale: 300, revalidate: 3600, expire: 86400 } : { stale: 60, revalidate: 60, expire: 300 });
+  cacheLife(loaded.length === items.length ? { stale: 300, revalidate: 3600, expire: 86400 } : { stale: 60, revalidate: 60, expire: 300 });
   return loaded;
 }

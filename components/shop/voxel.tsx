@@ -145,7 +145,7 @@ export function playerSkin() {
 }
 
 // The player model's parts at rest (vanilla's wide arms), with their pivots.
-const PLAYER_BONES: { bone: string; pivot: Vec3; cube: ArtCube }[] = [
+export const PLAYER_BONES: { bone: string; pivot: Vec3; cube: ArtCube }[] = [
   { bone: "head", pivot: [0, 0, 0], cube: { origin: [-4, -8, -4], size: [8, 8, 8], uv: [0, 0], inflate: 0, mirror: false } },
   { bone: "body", pivot: [0, 0, 0], cube: { origin: [-4, 0, -2], size: [8, 12, 4], uv: [16, 16], inflate: 0, mirror: false } },
   { bone: "right_arm", pivot: [-5, 2, 0], cube: { origin: [-3, -2, -2], size: [4, 12, 4], uv: [40, 16], inflate: 0, mirror: false } },
@@ -153,6 +153,17 @@ const PLAYER_BONES: { bone: string; pivot: Vec3; cube: ArtCube }[] = [
   { bone: "right_leg", pivot: [-1.9, 12, 0], cube: { origin: [-2, 0, -2], size: [4, 12, 4], uv: [0, 16], inflate: 0, mirror: false } },
   { bone: "left_leg", pivot: [1.9, 12, 0], cube: { origin: [-2, 0, -2], size: [4, 12, 4], uv: [16, 48], inflate: 0, mirror: false } },
 ];
+
+const BONE_PIVOT = new Map(PLAYER_BONES.map((b) => [b.bone, b.pivot]));
+export const bonePivot = (bone: string): Vec3 => BONE_PIVOT.get(bone) ?? [0, 0, 0];
+
+/** The bone a top-level part rides: its own, or the item's. */
+export const partBone = (art: ItemArt, part: ArtPart) => part.bone ?? art.bone;
+
+/** The bones an item's model rides, the item's own first. */
+export function itemBones(art: ItemArt) {
+  return [...new Set(art.parts.map((p) => partBone(art, p)))].sort((a, b) => Number(b === art.bone) - Number(a === art.bone));
+}
 
 // ── geometry ──
 
@@ -236,15 +247,34 @@ function Part({ part, tex, refs }: { part: ArtPart; tex: Texture; refs?: PartRef
   );
 }
 
-/** An item's model under its attachment (offset, rotation, scale), in its bone's space. */
-export function ItemModel({ art, tex, refs }: { art: ItemArt; tex: Texture; refs?: PartRefs }) {
+/** The parts of an item that ride `bone`, under the item's attachment (offset, rotation, then scale), in that bone's space. */
+export function ItemModel({ art, bone, tex, refs }: { art: ItemArt; bone: string; tex: Texture; refs?: PartRefs }) {
   const a = art.attach;
   return (
     <div className="vx-bone" style={{ transform: `${pose(a.offset, a.rotation)} scale3d(${a.scale}, ${a.scale}, ${a.scale})` }}>
-      {art.parts.map((p, i) => (
-        <Part key={p.name || i} part={p} tex={tex} refs={refs} />
-      ))}
+      {art.parts
+        .filter((p) => partBone(art, p) === bone)
+        .map((p, i) => (
+          <Part key={p.name || i} part={p} tex={tex} refs={refs} />
+        ))}
     </div>
+  );
+}
+
+/** An item alone, each of its parts on its bone's pivot, over a faint mannequin of those bones if `tint` is given. */
+export function ItemAlone({ art, tex, tint }: { art: ItemArt; tex: Texture; tint?: string }) {
+  return (
+    <>
+      {itemBones(art).map((bone) => {
+        const body = PLAYER_BONES.find((b) => b.bone === bone);
+        return (
+          <div key={bone} className="vx-bone" style={{ transform: pose(bonePivot(bone), [0, 0, 0]) }}>
+            {tint && body && <Cube cube={body.cube} tint={tint} />}
+            <ItemModel art={art} bone={bone} tex={tex} />
+          </div>
+        );
+      })}
+    </>
   );
 }
 
@@ -256,10 +286,10 @@ export function Player({ skin, items, textures, refs }: { skin: Texture; items: 
         <div key={b.bone} className="vx-bone" style={{ transform: pose(b.pivot, [0, 0, 0]) }}>
           <Cube cube={b.cube} tex={skin} />
           {items
-            .filter((i) => i.bone === b.bone && i.parts.length > 0)
+            .filter((i) => i.parts.some((p) => partBone(i, p) === b.bone))
             .map((i) => {
               const tex = textures.get(pngUrl(i.texture));
-              return tex ? <ItemModel key={i.id} art={i} tex={tex} refs={refs} /> : null;
+              return tex ? <ItemModel key={i.id} art={i} bone={b.bone} tex={tex} refs={refs} /> : null;
             })}
         </div>
       ))}
@@ -300,21 +330,41 @@ export function animate(items: ItemArt[], refs: PartRefs, seconds: number) {
   }
 }
 
-// ── bounds, to frame an item alone ──
+// ── bounds, to frame an item alone (in the player's space, as ItemAlone draws it; rotations left out) ──
 
-export function bounds(art: ItemArt) {
+export function bounds(art: ItemArt, mannequin = false) {
   const lo: Vec3 = [Infinity, Infinity, Infinity];
   const hi: Vec3 = [-Infinity, -Infinity, -Infinity];
-  const walk = (part: ArtPart, at: Vec3) => {
+  const s = art.attach.scale;
+  const add = (from: Vec3, to: Vec3) => {
+    for (let k = 0; k < 3; k++) {
+      lo[k] = Math.min(lo[k], from[k]);
+      hi[k] = Math.max(hi[k], to[k]);
+    }
+  };
+  const walk = (part: ArtPart, root: Vec3, at: Vec3) => {
     const o: Vec3 = [at[0] + part.pivot[0], at[1] + part.pivot[1], at[2] + part.pivot[2]];
     for (const c of part.cubes)
-      for (let k = 0; k < 3; k++) {
-        lo[k] = Math.min(lo[k], o[k] + c.origin[k] - c.inflate);
-        hi[k] = Math.max(hi[k], o[k] + c.origin[k] + c.size[k] + c.inflate);
-      }
-    part.children.forEach((c) => walk(c, o));
+      add(
+        [0, 1, 2].map((k) => root[k] + s * (o[k] + c.origin[k] - c.inflate)) as Vec3,
+        [0, 1, 2].map((k) => root[k] + s * (o[k] + c.origin[k] + c.size[k] + c.inflate)) as Vec3,
+      );
+    part.children.forEach((c) => walk(c, root, o));
   };
-  art.parts.forEach((p) => walk(p, art.attach.offset));
+  for (const p of art.parts) {
+    const pivot = bonePivot(partBone(art, p));
+    walk(p, [0, 1, 2].map((k) => pivot[k] + art.attach.offset[k]) as Vec3, [0, 0, 0]);
+  }
+  if (mannequin)
+    for (const bone of itemBones(art)) {
+      const body = PLAYER_BONES.find((b) => b.bone === bone);
+      if (!body) continue;
+      const pivot = bonePivot(bone);
+      add(
+        [0, 1, 2].map((k) => pivot[k] + body.cube.origin[k]) as Vec3,
+        [0, 1, 2].map((k) => pivot[k] + body.cube.origin[k] + body.cube.size[k]) as Vec3,
+      );
+    }
   if (!Number.isFinite(lo[0])) return { centre: [0, 0, 0] as Vec3, size: 8 };
   return { centre: lo.map((l, k) => (l + hi[k]) / 2) as Vec3, size: Math.max(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) };
 }
@@ -329,5 +379,4 @@ export function Stage({ children, stageRef, className = "", label }: { children:
   );
 }
 
-export const MANNEQUIN_HEAD: ArtCube = { origin: [-4, -8, -4], size: [8, 8, 8], uv: [0, 0], inflate: 0, mirror: false };
 export { Cube };

@@ -93,8 +93,8 @@ Railway service variables:
 | `TELEMETRY_URL` | Optional, defaults to `https://telemetry.playhorizon.dev` |
 | `KIRA_URL` | Optional, Kira's address for `/api/market`; defaults to `https://kira-production-500e.up.railway.app` |
 | `SITE_URL` | Optional, defaults to `https://playhorizon.dev`; used for canonical links, the sitemap and share cards |
-| `COSMETICS_UPSTREAM` | Optional, defaults to `https://cosmetics.playhorizon.dev`: the cosmetics service `/shop` reads (server side only) |
-| `SHOP_PREVIEW` | `1` shows `/shop` with a sample claim window while the service's window is closed, for previews. Never set it on production (it is ignored where `RAILWAY_ENVIRONMENT_NAME` is `production`) |
+| `COSMETICS_UPSTREAM` | Optional, defaults to `https://cosmetics.playhorizon.dev`: the cosmetics service `/shop` reads (server side only). Point it at a local stand-in for development and tests only, never on production |
+| `SHOP_PREVIEW` | `1` shows `/shop` with a sample seven-day claim window (from the start of the current hour) while the service's window is closed, for previews. Never set it on production (it is ignored where `RAILWAY_ENVIRONMENT_NAME` is `production`) |
 
 Release view counts live in `.data/`, which is reset by every deploy unless a volume is mounted at `/app/.data`.
 

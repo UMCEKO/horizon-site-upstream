@@ -67,7 +67,7 @@ export default async function ShopPage() {
             <span className="text-accent block pb-1">is free.</span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/70">
-            Four things for the players who were here first: a visor, a little sun for your shoulder, a name tag and a launcher theme. Claim them in the
+            Four things for the players who were here first: a cap, a T-shirt, a backpack and a name tag. Claim them in the
             Horizon launcher; once claimed, they&apos;re yours to keep.
           </p>
 
