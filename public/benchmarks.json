@@ -1,7 +1,7 @@
 {
  "format": "horizon-benchmark-summary",
  "version": 1,
- "generated": "2026-11-04T15:49:30Z",
+ "generated": "2026-11-04T16:30:52Z",
  "min_installs": 3,
  "groups": [
   {
@@ -11,8 +11,8 @@
    "game": "horizon",
    "source": "us",
    "machine": "Mac mini (M4 Pro)",
-   "measured": "2026-11-04",
-   "version": "Nightly 2026-11-04 (67dad0d)",
+   "measured": "2026-10-22",
+   "version": "v2026.10.22.04",
    "backend": "metal",
    "os": "macos",
    "window": [
@@ -20,40 +20,40 @@
     720
    ],
    "repeats": 3,
-   "load_avg_1m": 17.39,
-   "note": "Measured on 2026-11-04 with Horizon's Nightly of that day. The Mac mini's session was locked, so Horizon drew offscreen (into an image that is never shown: a window gets no frames while the session is locked) and Java Edition drew into its window as usual. That spares Horizon the step of showing each frame, so its frame rates are no longer held at the 144 Hz display as on 2026-10-22, and they are higher than it would get on a screen. The Mac mini was also running other jobs: each game started at a 1-minute load average of 17 to 18 on 14 threads, and it rose to 30 to 50 during the runs. That costs both games, Java Edition more, since Horizon's render and server threads ask macOS for a higher priority.",
-   "offscreen": true,
+   "load_avg_1m": 55.691,
+   "note": "Measured on 2026-10-22 with Horizon v2026.10.22.04 and not measured again on 2026-11-04: that day the Mac mini's session was locked, so Horizon could only draw offscreen, which isn't a fair comparison with Java Edition's window. On macOS this Horizon build presents its frames in step with the 144 Hz display even with VSync off, so its average frame rate here is capped at 144: compare the 1% lows and frame times instead. The Mac mini was also running other jobs during the runs (CI, simulators; 1-minute load average 20 to 56 on 14 threads), which costs both games, vanilla more at render distance 32.",
+   "capped_fps": 144,
    "medians": {
-    "avg_fps": 774,
-    "low_1pct_fps": 294,
-    "p95_ms": 1.6,
-    "world_ms": 4081,
-    "chunk_load_ms": 4082,
-    "rss_peak_mb": 1213,
-    "rss_steady_mb": 1034,
-    "cpu_p50_ms": 0.6,
-    "gpu_p50_ms": 1.3
+    "avg_fps": 144,
+    "low_1pct_fps": 97,
+    "p95_ms": 7.7,
+    "world_ms": 11075,
+    "chunk_load_ms": 9438,
+    "rss_peak_mb": 1332,
+    "rss_steady_mb": 1201,
+    "cpu_p50_ms": 0.7,
+    "gpu_p50_ms": null
    },
    "scenes": {
     "village": {
-     "avg_fps": 1000,
-     "low_1pct_fps": 337,
-     "chunk_load_ms": 3364
+     "avg_fps": 144,
+     "low_1pct_fps": 97,
+     "chunk_load_ms": 6990
     },
     "forest": {
-     "avg_fps": 593,
-     "low_1pct_fps": 250,
-     "chunk_load_ms": 3685
+     "avg_fps": 144,
+     "low_1pct_fps": 100,
+     "chunk_load_ms": 10500
     },
     "ocean": {
-     "avg_fps": 789,
-     "low_1pct_fps": 277,
-     "chunk_load_ms": 3594
+     "avg_fps": 144,
+     "low_1pct_fps": 98,
+     "chunk_load_ms": 10672
     },
     "mountain": {
-     "avg_fps": 716,
-     "low_1pct_fps": 314,
-     "chunk_load_ms": 5683
+     "avg_fps": 144,
+     "low_1pct_fps": 94,
+     "chunk_load_ms": 9588
     }
    }
   },
@@ -64,8 +64,8 @@
    "game": "horizon",
    "source": "us",
    "machine": "Mac mini (M4 Pro)",
-   "measured": "2026-11-04",
-   "version": "Nightly 2026-11-04 (67dad0d)",
+   "measured": "2026-10-22",
+   "version": "v2026.10.22.04",
    "backend": "metal",
    "os": "macos",
    "window": [
@@ -73,39 +73,39 @@
     720
    ],
    "repeats": 3,
-   "load_avg_1m": 17.712,
-   "offscreen": true,
+   "load_avg_1m": 34.828,
+   "capped_fps": 144,
    "medians": {
-    "avg_fps": 297,
-    "low_1pct_fps": 159,
-    "p95_ms": 4.8,
-    "world_ms": 12369,
-    "chunk_load_ms": 10176,
-    "rss_peak_mb": 1698,
-    "rss_steady_mb": 1428,
-    "cpu_p50_ms": 1.7,
-    "gpu_p50_ms": 3.3
+    "avg_fps": 144,
+    "low_1pct_fps": 109,
+    "p95_ms": 7.7,
+    "world_ms": 16377,
+    "chunk_load_ms": 16379,
+    "rss_peak_mb": 2267,
+    "rss_steady_mb": 1892,
+    "cpu_p50_ms": 1.5,
+    "gpu_p50_ms": null
    },
    "scenes": {
     "village": {
-     "avg_fps": 454,
-     "low_1pct_fps": 223,
-     "chunk_load_ms": 6926
+     "avg_fps": 144,
+     "low_1pct_fps": 101,
+     "chunk_load_ms": 12453
     },
     "forest": {
-     "avg_fps": 216,
-     "low_1pct_fps": 137,
-     "chunk_load_ms": 8297
+     "avg_fps": 144,
+     "low_1pct_fps": 114,
+     "chunk_load_ms": 16309
     },
     "ocean": {
-     "avg_fps": 275,
-     "low_1pct_fps": 166,
-     "chunk_load_ms": 8355
+     "avg_fps": 144,
+     "low_1pct_fps": 119,
+     "chunk_load_ms": 14322
     },
     "mountain": {
-     "avg_fps": 243,
-     "low_1pct_fps": 111,
-     "chunk_load_ms": 17125
+     "avg_fps": 144,
+     "low_1pct_fps": 100,
+     "chunk_load_ms": 22432
     }
    }
   },
@@ -116,7 +116,7 @@
    "game": "vanilla",
    "source": "us",
    "machine": "Mac mini (M4 Pro)",
-   "measured": "2026-11-04",
+   "measured": "2026-10-22",
    "version": "26.3",
    "backend": "opengl",
    "os": "macos",
@@ -125,38 +125,38 @@
     720
    ],
    "repeats": 3,
-   "load_avg_1m": 17.628,
+   "load_avg_1m": 19.995,
    "medians": {
-    "avg_fps": 132,
-    "low_1pct_fps": 27,
-    "p95_ms": 34,
-    "world_ms": 31330,
-    "chunk_load_ms": 14628,
-    "rss_peak_mb": 2135,
-    "rss_steady_mb": 1836,
+    "avg_fps": 123,
+    "low_1pct_fps": 29,
+    "p95_ms": 17,
+    "world_ms": 22268,
+    "chunk_load_ms": 10264,
+    "rss_peak_mb": 2445,
+    "rss_steady_mb": 2283,
     "cpu_p50_ms": null,
     "gpu_p50_ms": null
    },
    "scenes": {
     "village": {
-     "avg_fps": 93,
-     "low_1pct_fps": 17,
-     "chunk_load_ms": 12623
+     "avg_fps": 136,
+     "low_1pct_fps": 40,
+     "chunk_load_ms": 8374
     },
     "forest": {
-     "avg_fps": 107,
-     "low_1pct_fps": 23,
-     "chunk_load_ms": 14591
+     "avg_fps": 115,
+     "low_1pct_fps": 22,
+     "chunk_load_ms": 10976
     },
     "ocean": {
-     "avg_fps": 164,
-     "low_1pct_fps": 36,
-     "chunk_load_ms": 13309
+     "avg_fps": 127,
+     "low_1pct_fps": 29,
+     "chunk_load_ms": 7219
     },
     "mountain": {
-     "avg_fps": 162,
-     "low_1pct_fps": 34,
-     "chunk_load_ms": 17989
+     "avg_fps": 112,
+     "low_1pct_fps": 23,
+     "chunk_load_ms": 14487
     }
    }
   },
@@ -167,7 +167,7 @@
    "game": "vanilla",
    "source": "us",
    "machine": "Mac mini (M4 Pro)",
-   "measured": "2026-11-04",
+   "measured": "2026-10-22",
    "version": "26.3",
    "backend": "opengl",
    "os": "macos",
@@ -176,38 +176,38 @@
     720
    ],
    "repeats": 3,
-   "load_avg_1m": 18.159,
+   "load_avg_1m": 24.818,
    "medians": {
-    "avg_fps": 68,
-    "low_1pct_fps": 16,
-    "p95_ms": 55,
-    "world_ms": 44183,
-    "chunk_load_ms": 33155,
-    "rss_peak_mb": 2731,
-    "rss_steady_mb": 2577,
+    "avg_fps": 43,
+    "low_1pct_fps": 8,
+    "p95_ms": 88,
+    "world_ms": 65831,
+    "chunk_load_ms": 50534,
+    "rss_peak_mb": 2947,
+    "rss_steady_mb": 2932,
     "cpu_p50_ms": null,
     "gpu_p50_ms": null
    },
    "scenes": {
     "village": {
-     "avg_fps": 76,
-     "low_1pct_fps": 17,
-     "chunk_load_ms": 17227
+     "avg_fps": 48,
+     "low_1pct_fps": 6,
+     "chunk_load_ms": 23987
     },
     "forest": {
-     "avg_fps": 73,
-     "low_1pct_fps": 22,
-     "chunk_load_ms": 34112
+     "avg_fps": 54,
+     "low_1pct_fps": 13,
+     "chunk_load_ms": 36379
     },
     "ocean": {
-     "avg_fps": 70,
-     "low_1pct_fps": 18,
-     "chunk_load_ms": 19067
+     "avg_fps": 48,
+     "low_1pct_fps": 8,
+     "chunk_load_ms": 18553
     },
     "mountain": {
-     "avg_fps": 52,
-     "low_1pct_fps": 6,
-     "chunk_load_ms": 62215
+     "avg_fps": 23,
+     "low_1pct_fps": 3,
+     "chunk_load_ms": 123217
     }
    }
   },

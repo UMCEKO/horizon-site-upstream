@@ -4,17 +4,17 @@
     "reports": [
       "macmini/horizon-macmini-rd12.json"
     ],
-    "version": "Nightly 2026-11-04 (67dad0d)",
-    "note": "Measured on 2026-11-04 with Horizon's Nightly of that day. The Mac mini's session was locked, so Horizon drew offscreen (into an image that is never shown: a window gets no frames while the session is locked) and Java Edition drew into its window as usual. That spares Horizon the step of showing each frame, so its frame rates are no longer held at the 144 Hz display as on 2026-10-22, and they are higher than it would get on a screen. The Mac mini was also running other jobs: each game started at a 1-minute load average of 17 to 18 on 14 threads, and it rose to 30 to 50 during the runs. That costs both games, Java Edition more, since Horizon's render and server threads ask macOS for a higher priority.",
-    "offscreen": true
+    "version": "v2026.10.22.04",
+    "capped_fps": 144,
+    "note": "Measured on 2026-10-22 with Horizon v2026.10.22.04 and not measured again on 2026-11-04: that day the Mac mini's session was locked, so Horizon could only draw offscreen, which isn't a fair comparison with Java Edition's window. On macOS this Horizon build presents its frames in step with the 144 Hz display even with VSync off, so its average frame rate here is capped at 144: compare the 1% lows and frame times instead. The Mac mini was also running other jobs during the runs (CI, simulators; 1-minute load average 20 to 56 on 14 threads), which costs both games, vanilla more at render distance 32."
   },
   {
     "machine": "Mac mini (M4 Pro)",
     "reports": [
       "macmini/horizon-macmini-rd32.json"
     ],
-    "version": "Nightly 2026-11-04 (67dad0d)",
-    "offscreen": true
+    "version": "v2026.10.22.04",
+    "capped_fps": 144
   },
   {
     "machine": "Mac mini (M4 Pro)",
