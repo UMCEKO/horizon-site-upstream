@@ -15,7 +15,8 @@ const PREVIEW_DAYS = 7;
 // What the founder set holds, as the launcher's Wardrobe sorts it. Launcher themes are free in the launcher's Settings
 // and never part of the shop, so an item of any other slot is left out.
 export type ShopSlot = "head" | "torso" | "back" | "shoulder" | "name_tag";
-export type ShopItem = { id: string; hash: string; slot: ShopSlot; name: string; line?: string };
+// `price`: what the shop shows before anyone signs in ("Free" for the founder set, else the service's price).
+export type ShopItem = { id: string; hash: string; slot: ShopSlot; name: string; price: string; line?: string };
 export type ShopStatus = { open: boolean; endsAt: number | null; items: ShopItem[]; preview: boolean };
 
 // The item file, as horizon's `crates/horizon-cosmetics` reads it (docs/cosmetics.md in the game's repository).
@@ -54,6 +55,13 @@ async function upstream(path: string) {
   return (await res.json()) as unknown;
 }
 
+/** The service's `price` (`{amount: cents, currency}`) as the shop writes it; none: free. */
+function priceLabel(price: unknown) {
+  if (!obj(price) || typeof price.amount !== "number" || !Number.isFinite(price.amount) || price.amount <= 0) return "Free";
+  const currency = typeof price.currency === "string" && /^[A-Z]{3}$/.test(price.currency) ? price.currency : "USD";
+  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(price.amount / 100);
+}
+
 function readCatalogue(json: unknown): Omit<ShopStatus, "preview"> | null {
   if (!obj(json) || !obj(json.claim) || !Array.isArray(json.items)) return null;
   const claim = json.claim;
@@ -66,7 +74,7 @@ function readCatalogue(json: unknown): Omit<ShopStatus, "preview"> | null {
     const name = typeof names.en_us === "string" ? names.en_us.slice(0, 48) : raw.id;
     const lines = obj(raw.lines) ? raw.lines : {};
     const line = typeof lines.en_us === "string" && lines.en_us.trim() ? lines.en_us.trim().slice(0, 160) : undefined;
-    items.push({ id: raw.id, hash: raw.hash, slot: raw.slot as ShopSlot, name, ...(line ? { line } : {}) });
+    items.push({ id: raw.id, hash: raw.hash, slot: raw.slot as ShopSlot, name, price: priceLabel(raw.price), ...(line ? { line } : {}) });
   }
   // The order the service gives the set in.
   items.sort((a, b) => founder.indexOf(a.id) - founder.indexOf(b.id));

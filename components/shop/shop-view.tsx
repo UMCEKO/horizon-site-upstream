@@ -312,7 +312,7 @@ export function FounderSet({ items, art }: { items: ShopItem[]; art: ItemArt[] }
                 </span>
                 <span className="block px-2 pt-3">
                   <span className="block font-display text-[17px] leading-tight font-semibold tracking-[-0.01em] text-white">{item.name}</span>
-                  <span className="mt-0.5 block text-sm text-white/55">{SLOT_LABEL[item.slot]}</span>
+                  <span className="mt-0.5 block text-sm text-white/55">{SLOT_LABEL[item.slot]} · {item.price}</span>
                 </span>
                 {item.line && <span className="block px-2 pt-2 pb-2 text-sm leading-relaxed text-white/65">{item.line}</span>}
               </button>
