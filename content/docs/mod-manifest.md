@@ -100,7 +100,7 @@ Horizon changes every day, and a hook names a function of its source. What a mod
 | Key | What it is |
 | --- | --- |
 | `game` | The Minecraft version: `26.3`. |
-| `hooks` | The [API version](/docs/mod-code#api-versions) the mod needs: the newest hook point or helper it uses. The current Nightly has 80, Horizon's main branch 153. |
+| `hooks` | The [API version](/docs/mod-code#api-versions) the mod needs: the newest hook point or helper it uses. [API versions](/docs/mod-code#api-versions) says where to find the current Nightly's. |
 | `horizon_revision` | The commit the mod was tested on: the same as in `horizon-mixin.toml`. Take a Nightly's ([Releases](/releases)). |
 | `horizon_mixins_revision` | The horizon-mixins the mod was made with. Use the one Horizon's own mods use, in [horizon-mods' `native/`](https://github.com/horizon-rust/horizon-mods/tree/main/native). |
 

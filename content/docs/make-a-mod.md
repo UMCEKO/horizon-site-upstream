@@ -24,7 +24,7 @@ A native mod is a **bundle** for [horizon-mixins](https://github.com/horizon-rus
 
 Horizon keeps a set of **hook points** for this: empty functions the game calls at fixed places (every tick, every frame, when it draws the HUD, when a key goes down, when the player types a command, when Options > Mods lists the mods), and helpers to read the player, draw text and keep settings. A mod that hooks only these builds on every later version of Horizon too, so it doesn't need a new release for each Nightly. Horizon's own Zoom, FPS Counter, Keystrokes and Minimap are made this way.
 
-Horizon's main branch adds a second way to write the code, the [typed API](/docs/mod-code#the-typed-api): one Rust crate that implements a trait, with a method for each hook point and a typed event for each. Players get it with the next Nightly. This guide's example uses helpers, which work on every release.
+There is a second way to write the code, the [typed API](/docs/mod-code#the-typed-api): one Rust crate that implements a trait, with a method for each hook point and a typed event for each. Nightlies since 2026-11-03 have it. This guide's example uses helpers, which work on every release.
 
 Players never compile anything by hand. They install the mod from the launcher's Mods page, and the launcher compiles the game with it, with its own copy of Rust ([below](#what-players-see)).
 

@@ -1,11 +1,11 @@
 # Hook points and helpers
 
-Horizon's hook points are empty functions the game calls at fixed places, for native mods to hook. Beside them are helpers your code calls: the player, the frame rate, text and boxes on the HUD, chat, settings. Most live in [`native_hooks.rs`](https://github.com/horizon-rust/horizon/blob/main/crates/horizon-client/src/game/native_hooks.rs). They keep their names and parameters from release to release, and are only ever added to. Horizon's main branch has 186 hook points and 109 helpers, from ticks and the HUD to block behaviour, mobs, loot tables, explosions, menus and rendering. The catalog [`native-hooks.json`](https://github.com/horizon-rust/horizon/blob/main/native-hooks.json) names them all, and [`docs/native-mods.md`](https://github.com/horizon-rust/horizon/blob/main/docs/native-mods.md) documents each one.
+Horizon's hook points are empty functions the game calls at fixed places, for native mods to hook. Beside them are helpers your code calls: the player, the frame rate, text and boxes on the HUD, chat, settings. Most live in [`native_hooks.rs`](https://github.com/horizon-rust/horizon/blob/main/crates/horizon-client/src/game/native_hooks.rs). They keep their names and parameters from release to release, and are only ever added to. There are more than 350 hook points and 100 helpers, from ticks and the HUD to block behaviour, mobs, loot tables, explosions, menus and rendering. The catalog [`native-hooks.json`](https://github.com/horizon-rust/horizon/blob/main/native-hooks.json) names them all, and [`docs/native-mods.md`](https://github.com/horizon-rust/horizon/blob/main/docs/native-mods.md) documents each one.
 
 Your code reaches them in one of two ways:
 
 - **Mixin helpers** (this page's worked example): one small `.rs` helper for each hook, which horizon-mixins pastes into the hook point. This works on every Horizon release.
-- **The typed API** (new): one Rust crate that implements the `Hooks` trait, with one method per hook and a typed event for each. It is on Horizon's main branch, and players get it with the next Nightly ([below](#the-typed-api)).
+- **The typed API** (new): one Rust crate that implements the `Hooks` trait, with one method per hook and a typed event for each. Nightlies since 2026-11-03 have it ([below](#the-typed-api)).
 
 This page lists the hook points most mods start with, then builds a complete mod, then shows the typed API.
 
@@ -60,10 +60,7 @@ Call them on `game` from your helpers:
 
 Each hook point or helper Horizon adds raises the API version, `NATIVE_HOOKS_API` in `native_hooks.rs`. A mod names the version it needs (`"hooks"` in [compatibility.json](/docs/mod-manifest#compatibility-json)), and builds on any Horizon with that version or a later one. The launcher builds it on the game the player plays when that game is new enough, else on the commit the mod was tested on.
 
-| Where | API version |
-| --- | --- |
-| Nightly 2026-11-01 (the current Nightly) | 80 |
-| Horizon's main branch | 153 |
+The current Nightly's version is `NATIVE_HOOKS_API` in [its `native_hooks.rs`](https://github.com/horizon-rust/horizon/blob/nightly/crates/horizon-client/src/game/native_hooks.rs) (Nightly 2026-11-04 has 359). Horizon's main branch is ahead of it, so check that the hooks you use are in the Nightly.
 
 For example, version 2 added what a recipe viewer needs: the panel beside container screens (`native_panel_items`, `native_panel_recipes`), the hook `native_panel_event` for the player's clicks, searches and keys over it, and the game's items and recipes (`native_recipes`, `native_known_recipes`, `native_place_recipe`, `native_give`). The native port of Horizon's Recipes mod, in horizon-mods' `native/recipes`, uses them and sets `"hooks": 2`. The [catalog](https://github.com/horizon-rust/horizon/blob/main/docs/native-mods.md#mods-on-the-hook-points) says which version added each hook point.
 
@@ -316,7 +313,7 @@ bindings = [
 
 The typed API is the second way to write a native mod. Instead of one helper for each hook, the mod is one Rust crate that implements the trait `horizon_client::mod_api::Hooks`. Every hook point in the catalog is a method of that trait, with a default body that does nothing, so you write only the ones you need. Each method gets an event, a struct named after the hook (`TickEvent`, `HudEvent`, `LivingIncomingDamageEvent`), and the game's `Host` where the hook has one.
 
-**Where it works.** The typed API is on Horizon's main branch, and players get it with the next Nightly: Nightly 2026-11-01 doesn't have it. Building a typed mod takes launcher 0.2.37 or later. Until that Nightly ships, pin your mod to a commit of main (`horizon_revision` below), and the launcher builds it on that commit.
+**Where it works.** Nightlies since 2026-11-03 have the typed API; earlier ones don't. Building a typed mod takes launcher 0.2.37 or later. Pin your mod to the Nightly you tested it on (`horizon_revision` below).
 
 ### A typed mod: Soft pigs
 
@@ -338,9 +335,9 @@ softpigs/
 id = "softpigs"
 version = "0.1.0"
 
-# A commit of Horizon's main branch, until a Nightly has the typed API.
+# The commit of the Nightly the mod was tested on (here Nightly 2026-11-04).
 [compatibility]
-horizon_revision = "c5c8a33a8a3ec0091060096bdbaab25770778eaf"
+horizon_revision = "6475f62f3c834b7489e1816bf47f47ea5eb2b879"
 
 [api]
 path = "engine"
@@ -356,7 +353,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
-horizon-client = { git = "https://github.com/horizon-rust/horizon", rev = "c5c8a33a8a3ec0091060096bdbaab25770778eaf" }
+horizon-client = { git = "https://github.com/horizon-rust/horizon", rev = "6475f62f3c834b7489e1816bf47f47ea5eb2b879" }
 ```
 
 `engine/src/lib.rs` implements one hook and exports `hooks()`, which the launcher calls:
