@@ -55,7 +55,10 @@ The `/docs/api/*` pages come from `docs/api/` in the game's repository, read fro
 
 `/perf` opens `.hzperf` captures recorded by the game's `/profiler`, `horizon-ctl profile` or a server's `profile`
 command. The file is read in the browser by the game's capture reader, built to WebAssembly: pick a file, paste or
-drop one. Compare takes a second capture the same ways. The Ticks, Spans, Functions, GPU, Memory, Network and World
+drop one. Compare takes a second capture the same ways. The game's **[Open]** (and `horizon-perf open`) serves the
+file once on 127.0.0.1 behind a random token and opens `/perf#local=http://127.0.0.1:<port>/<token>`: the viewer
+checks the address has exactly that form, drops the fragment, fetches the file once and opens it like a dropped one.
+Only `/perf`'s CSP allows `connect-src` to `http://127.0.0.1:*` and `http://localhost:*`. The Ticks, Spans, Functions, GPU, Memory, Network and World
 tabs read the same capture.
 
 The reader is not built here. `public/perf/horizon_perf.wasm` and its wrapper `lib/perf/generated/horizon_perf.js`

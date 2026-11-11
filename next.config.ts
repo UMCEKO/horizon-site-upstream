@@ -6,7 +6,7 @@ const perfCsp = [
   `script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline'${development ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
-  "connect-src 'self'",
+  "connect-src 'self' http://127.0.0.1:* http://localhost:*",
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",

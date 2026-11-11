@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { DragEvent } from "react";
 import { t } from "@/lib/perf/i18n";
+import { LocalCaptureError, loadLocalCapture, localCaptureUrl, localParam } from "@/lib/perf/local-capture";
 import { sharedFile } from "@/lib/perf/share-client";
 import { CaptureView } from "./capture-view";
 import { Landing } from "./landing";
@@ -15,6 +16,29 @@ export default function PerfViewer({ captureId }: { captureId?: string }) {
   const input = useRef<HTMLInputElement>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [linkPending, setLinkPending] = useState(Boolean(captureId));
+  const [localUrl, setLocalUrl] = useState<string | null>(null);
+  const localStarted = useRef(false);
+
+  useEffect(() => {
+    const raw = localParam(window.location.hash);
+    if (raw === null) return;
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    const url = localCaptureUrl(raw);
+    if (url) {
+      /* eslint-disable react-hooks/set-state-in-effect -- the fragment is only readable in the browser */
+      setLocalUrl(url);
+      setLinkPending(true);
+      /* eslint-enable react-hooks/set-state-in-effect */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!localUrl || !reader || localStarted.current) return;
+    localStarted.current = true;
+    void loadLocalCapture(localUrl, open)
+      .catch((failure: unknown) => setLinkError(t(failure instanceof LocalCaptureError ? `local.${failure.failure}` : "local.expired")))
+      .finally(() => setLinkPending(false));
+  }, [localUrl, reader, open]);
 
   useEffect(() => {
     if (!captureId || !reader) return;
@@ -82,7 +106,7 @@ export default function PerfViewer({ captureId }: { captureId?: string }) {
         </>
       ) : linkPending && !readerError ? (
         <section className={styles.opening} aria-busy="true">
-          <p className={styles.muted} role="status">{t("share.opening")}</p>
+          <p className={styles.muted} role="status">{t(localUrl ? "local.opening" : "share.opening")}</p>
         </section>
       ) : (
         <Landing
