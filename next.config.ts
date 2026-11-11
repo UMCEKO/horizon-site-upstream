@@ -1,5 +1,17 @@
 import type { NextConfig } from "next";
 
+const development = process.env.NODE_ENV !== "production";
+const perfCsp = [
+  "default-src 'self'",
+  `script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline'${development ? " 'unsafe-eval'" : ""}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "connect-src 'self'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
+
 const nextConfig: NextConfig = {
   output: "standalone",
   allowedDevOrigins: ["202.61.226.46"],
@@ -38,6 +50,7 @@ const nextConfig: NextConfig = {
       { key: "X-Content-Type-Options", value: "nosniff" },
     ];
     return [
+      { source: "/perf/:path*", headers: [{ key: "Content-Security-Policy", value: perfCsp }] },
       { source: "/staff/:path*", headers: privateHeaders },
       { source: "/hub/:view(team|mod|sign-in|setup|staff-help)", headers: privateHeaders },
       { source: "/apply", headers: privateHeaders },
@@ -51,6 +64,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     rules: {
       "*.css": {
+        condition: { not: { path: /\.module\.css$/ } },
         loaders: ["@tailwindcss/turbopack"],
         as: "*.css",
       },

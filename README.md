@@ -38,6 +38,8 @@ app/staff/api/          the staff dashboards' proxy to Kira's service
 app/data/               /data/roadmap.json and /data/journal.json, which Kira reads
 app/sitemap.ts, robots.ts, manifest.ts, opengraph-image.tsx, llms.txt/, og/docs/
                         search and sharing: sitemap, robots, share cards, the summary for AI search
+app/perf/, lib/perf/     /perf: the performance capture viewer (its own root layout; strings in messages/perf/)
+vendor/perf/            the pinned reader bundle's provenance and checksums
 components/             every section, page part and data loader
 components/site.ts      the canonical address (SITE_URL), titles, descriptions and pageMetadata()
 content/docs/           the player docs (*.md) and their navigation (nav.json)
@@ -48,6 +50,34 @@ Dockerfile, railway.json   the Railway service
 ```
 
 The `/docs/api/*` pages come from `docs/api/` in the game's repository, read from GitHub.
+
+## The performance viewer
+
+`/perf` opens `.hzperf` captures recorded by the game's `/profiler`, `horizon-ctl profile` or a server's `profile`
+command. The file is read in the browser by the game's capture reader, built to WebAssembly: pick a file, paste or
+drop one. Compare takes a second capture the same ways. The Ticks, Spans, Functions, GPU, Memory, Network and World
+tabs read the same capture.
+
+The reader is not built here. `public/perf/horizon_perf.wasm` and its wrapper `lib/perf/generated/horizon_perf.js`
+are checked in with the fonts and icon, so a build needs only Node. `vendor/perf/manifest.json` records the game
+revision they were built from and each file's checksum; `vendor/perf/source.patch` holds any reader change that was
+not committed when the bundle was imported. `npm run perf:check` verifies the bundle and runs before `dev` and
+`build`. To update it, check out the game revision, then:
+
+```sh
+cargo xtask perf-wasm                                   # in the game repository
+npm run perf:import -- /path/to/horizon /path/to/perf-wasm-output
+npm test && npm run typecheck && npm run lint && npm run build
+```
+
+Import the wasm and its wrapper together. `npm test` runs the viewer's unit tests (`lib/perf/**/*.test.ts`).
+
+### Timing lows
+
+The summary shows 1% and 0.1% lows for frames and ticks, and the mean of each slow tail. A low is 1000 divided by the
+mean duration of the slowest `ceil(count × fraction)` frames or ticks; tick lows are work-based TPS capped at 20. The
+count and the rounding are shown so a short capture is not read as a large sample. Captures from before the recorder
+kept every duration (`SpanSummary.timing`) show the lows as unavailable: the viewer never estimates them.
 
 ## Where the data comes from
 
