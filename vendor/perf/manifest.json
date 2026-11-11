@@ -1,8 +1,8 @@
 {
   "repository": "https://github.com/horizon-rust/horizon",
-  "revision": "e3fbf94bbd331d48fa4a5c39b456f378fde495fd",
+  "revision": "fb85eb77e017541d0495c17fbb9f437b18df8770",
   "files": {
-    "public/perf/horizon_perf.wasm": "6a9f3d9e1a3b0a112552b691470950fdc2b57ae5bdc9c938ed4f0406ad36133c",
+    "public/perf/horizon_perf.wasm": "039eb1d44424c8128f890fdc83485150eef9587107106a36573118c7c4933197",
     "lib/perf/generated/horizon_perf.js": "782cdf8e0e01857b0c3ccec2066f1272fb463afdddf1889d3f9507e734f93594",
     "public/perf/horizon-64.png": "1017decdf41f0dba0113dcc02e65845456ae07ed6ce419b71723e7e50a1e3f67",
     "public/perf/fonts/OFL-Geist.txt": "c683bfbcc7e087f5d37a54ef628f10387c451a83ddc459b151403a164ac46c90",
