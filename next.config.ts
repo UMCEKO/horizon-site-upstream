@@ -14,6 +14,9 @@ const perfCsp = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  outputFileTracingIncludes: {
+    "/api/perf/**": ["./scripts/perf-validate.mjs", "./lib/perf/generated/horizon_perf.js", "./public/perf/horizon_perf.wasm"],
+  },
   allowedDevOrigins: ["202.61.226.46"],
   images: {
     remotePatterns: [
