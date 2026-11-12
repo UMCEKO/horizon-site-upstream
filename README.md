@@ -92,8 +92,9 @@ Import the wasm and its wrapper together. `npm test` runs the viewer's unit test
 
 An upload is validated by the same bundled reader in a worker, with a timeout and bounded inflation, at most two at a
 time. Unshared uploads expire after an hour; sharing keeps one for 30 days from the first share. Expired links stop
-answering at once; call the sweep endpoint every few minutes to free their bytes. New uploads stop at 90% of
-`PERF_STORAGE_BYTES`, and shared captures are never evicted early. Replies: 415 not a capture, 422 a newer format,
+answering at once and stop counting toward the limit; the server deletes their bytes itself every five minutes (the
+sweep endpoint does the same on demand). New uploads stop when live captures reach 90% of `PERF_STORAGE_BYTES`, and
+shared captures are never evicted early. Replies: 415 not a capture, 422 a newer format,
 413 too large, 403 wrong token, 507 storage full, 429 too many uploads. JSON replies are `no-store`.
 
 | Variable | Default or requirement |
@@ -108,7 +109,7 @@ answering at once; call the sweep endpoint every few minutes to free their bytes
 | `PERF_SHARED_DAYS` | `30` |
 | `PERF_HOURLY_UPLOADS` | `20` uploads per address an hour |
 | `PERF_TRUST_PROXY` | `false`; `true` only behind a proxy that sets `X-Forwarded-For` (its last entry is the client) |
-| `PERF_SWEEP_TOKEN` | Required by `/api/perf/sweep` |
+| `PERF_SWEEP_TOKEN` | Optional; enables the on-demand `/api/perf/sweep` |
 
 Without the `PERF_S3_*` variables the viewer still opens local files; only the API answers 503.
 `npm run test:api` runs the built standalone server (`.next/standalone`, with `public/` and `.next/static` copied in)

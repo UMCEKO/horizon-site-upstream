@@ -85,6 +85,40 @@ test("capacity reservations reject the upload that crosses ninety percent and ra
   } finally { store.close(); }
 });
 
+test("expired captures stop counting toward capacity before any sweep", async () => {
+  let time = 0;
+  const store = new CaptureStore({ ...config, maxBytes: 10, storageBytes: 10 }, new Objects(), () => time);
+  try {
+    await store.upload(new Uint8Array(8), summary);
+    await assert.rejects(store.upload(new Uint8Array(8), summary), status(507));
+    time = 3_600_000;
+    await store.upload(new Uint8Array(8), summary);
+  } finally { store.close(); }
+});
+
+test("the server's own sweep deletes expired bytes at most once every five minutes", async () => {
+  let time = 0;
+  const objects = new Objects();
+  const store = new CaptureStore(config, objects, () => time);
+  try {
+    await store.upload(new Uint8Array([1]), summary);
+    assert.equal(await store.sweepIfDue(), 0);
+    time = 3_600_000;
+    await store.upload(new Uint8Array([2]), summary);
+    assert.equal(await store.sweepIfDue(), 1);
+    assert.equal(objects.values.size, 1);
+    time = 2 * 3_600_000;
+    assert.equal(await store.sweepIfDue(), 1);
+    assert.equal(objects.values.size, 0);
+    await store.upload(new Uint8Array([3]), summary);
+    time = 3 * 3_600_000;
+    const [first, second] = await Promise.all([store.sweepIfDue(), store.sweepIfDue()]);
+    assert.equal(first + second, 2);
+    time += 60_000;
+    assert.equal(await store.sweepIfDue(), 0);
+  } finally { store.close(); }
+});
+
 test("metadata, owner tokens and rate limits survive a process restart", async () => {
   const directory = await mkdtemp(join(tmpdir(), "horizon-perf-test-"));
   const settings = { ...config, database: join(directory, "captures.sqlite"), hourlyUploads: 1 };

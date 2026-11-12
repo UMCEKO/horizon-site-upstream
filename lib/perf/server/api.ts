@@ -3,14 +3,22 @@ import { CAPTURE_TYPE } from "../sharing.ts";
 import { captureConfig } from "./config.ts";
 import { apiResponse, CaptureError, jsonResponse } from "./errors.ts";
 import { S3CaptureObjects } from "./objects.ts";
-import { CaptureStore } from "./store.ts";
+import { CaptureStore, SWEEP_EVERY } from "./store.ts";
 import { validateCapture } from "./validation.ts";
 
 let store: CaptureStore | undefined;
 let validating = 0;
 
 function captures(): CaptureStore {
-  return store ??= new CaptureStore(captureConfig(), new S3CaptureObjects());
+  if (!store) {
+    store = new CaptureStore(captureConfig(), new S3CaptureObjects());
+    setInterval(sweepQuietly, SWEEP_EVERY).unref();
+  }
+  return store;
+}
+
+function sweepQuietly(): void {
+  store?.sweepIfDue().catch((error) => console.error("perf: sweep failed", error));
 }
 
 function bearer(request: Request): string {
@@ -45,6 +53,7 @@ export function uploadCapture(request: Request): Promise<Response> {
     const storage = captures();
     const forwarded = request.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim();
     storage.attempt(storage.config.trustProxy ? forwarded ?? "unknown" : "local");
+    sweepQuietly();
     if (validating >= 2) throw new CaptureError("unavailable", 503);
     validating++;
     try {

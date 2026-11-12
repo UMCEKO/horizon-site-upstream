@@ -23,12 +23,17 @@ const digest = (value: string) => createHash("sha256").update(value).digest("hex
 const alphabet = "abcdefghijklmnopqrstuvwxyz234567";
 const randomId = () => [...randomBytes(10)].map((byte) => alphabet[byte & 31]).join("");
 
+/** How often the server sweeps expired captures on its own. */
+export const SWEEP_EVERY = 300_000;
+
 export class CaptureStore {
   readonly db: DatabaseSync;
 
   readonly config: CaptureConfig;
   private readonly objects: CaptureObjects;
   private readonly now: () => number;
+  private lastSweep = -Infinity;
+  private sweeping: Promise<number> | undefined;
 
   constructor(config: CaptureConfig, objects: CaptureObjects, now: () => number = Date.now) {
     this.config = config;
@@ -99,7 +104,7 @@ export class CaptureStore {
       shared: 0, token_hash: digest(token), summary: JSON.stringify(summary), state: "pending",
     };
     this.transaction(() => {
-      const used = Number(this.db.prepare("SELECT COALESCE(SUM(bytes), 0) AS n FROM captures").get()?.n);
+      const used = Number(this.db.prepare("SELECT COALESCE(SUM(bytes), 0) AS n FROM captures WHERE expires > ? AND state != 'deleting'").get(this.now())?.n);
       if (used + bytes.length >= this.config.storageBytes * 0.9) throw new CaptureError("storage_full", 507);
       this.db.prepare("INSERT INTO captures VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(row.id, row.bytes, row.created, row.expires, row.shared, row.token_hash, row.summary, row.state);
     });
@@ -156,6 +161,15 @@ export class CaptureStore {
       deleted++;
     }
     return deleted;
+  }
+
+  /** [`sweep`] at most once every {@link SWEEP_EVERY}; callers share a sweep already running. */
+  sweepIfDue(): Promise<number> {
+    if (this.sweeping) return this.sweeping;
+    if (this.now() - this.lastSweep < SWEEP_EVERY) return Promise.resolve(0);
+    this.lastSweep = this.now();
+    this.sweeping = this.sweep().finally(() => { this.sweeping = undefined; });
+    return this.sweeping;
   }
 
   close(): void {
